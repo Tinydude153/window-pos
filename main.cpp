@@ -26,15 +26,23 @@ int main() {
     CloseHandle(pi.hThread);*/
 
     SHELLEXECUTEINFOA shellexec;
+    HWND hwndWindow;
+    shellexec.hwnd = hwndWindow;
     shellexec.cbSize = sizeof(SHELLEXECUTEINFOA);
     shellexec.fMask = 0x00000000;
     shellexec.lpVerb = (const char*)"open";
-    shellexec.lpFile = (char*)"C:\\Users\\mneal\\OneDrive - Holzer Health System\\Desktop\\Scoreboard.lnk";
+    shellexec.lpFile = (char*)"C:\\Users\\MinimaDudus\\Desktop\\Scoreboard.lnk";
     shellexec.nShow = SW_SHOWNORMAL;
 
     if (!ShellExecuteExA(&shellexec)) {
 
         printf("\nShellExecute failed: %d\n", GetLastError());
+
+    }
+
+    if (!MoveWindow(hwndWindow, 0, 0, 500, 500, TRUE)) {
+
+        printf("\nMoveWindow failed: %d\n", GetLastError());
 
     }
 
@@ -56,4 +64,3 @@ int main() {
     std::cout << std::endl << dName;
 
 }
-
