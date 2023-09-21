@@ -3,13 +3,47 @@
 #include <tchar.h>
 #include <processthreadsapi.h>
 
+struct ProcHwnd {
+    DWORD proc_id;
+    HWND  hwnd;
+};
+
+char tBuffer[64];
+int tSize = 0;
+HWND window = GetTopWindow(GetDesktopWindow());
+
+BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
+    DWORD processId;
+
+    window = GetWindow(window, GW_HWNDNEXT);
+
+    if (IsWindowVisible(m_hwnd)) {
+
+        do {
+
+            tSize = GetWindowTextLengthA(m_hwnd);
+            GetWindowTextA(m_hwnd, tBuffer, tSize + 1);
+            std::cout << std::endl << tBuffer;
+
+        } while (m_hwnd = GetWindow(m_hwnd, GW_HWNDNEXT));
+
+    }
+
+    GetWindowThreadProcessId(m_hwnd, &processId);
+    if (processId == ((ProcHwnd*)lParam)->proc_id) {
+        ((ProcHwnd*)lParam)->hwnd = m_hwnd;
+        return FALSE;
+    }
+    return TRUE;
+}
+
 int main() {
 
-    /*STARTUPINFOA si { sizeof(STARTUPINFOA) };
+    STARTUPINFOA si { sizeof(STARTUPINFOA) };
     PROCESS_INFORMATION pi;
 
     const char* path = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
-    //char cline[] = "-app=https://stackoverflow.com/questions/67038352/createprocess-launching-edge-browser";
+    char cline[] = "\"-app\"www.twitch.tv\"\"";
 
     if (!CreateProcessA(path, cline, NULL, 
     NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
@@ -20,18 +54,25 @@ int main() {
 
     std::cout << std::endl << pi.dwProcessId;
 
-    WaitForSingleObject(pi.hProcess, INFINITE);
+    WaitForInputIdle(pi.hProcess, INFINITE);
+    HWND windowH;
+    ProcHwnd ph { pi.dwProcessId, windowH };
+    EnumWindows(enum_windows_proc, (LPARAM)&ph);
+
+    if (!MoveWindow(ph.hwnd, 0, 0, 500, 500, TRUE)) {
+
+        printf("\nMoveWindow failed: %d\n", GetLastError());
+
+    } 
 
     CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);*/
+    CloseHandle(pi.hThread);
 
-    SHELLEXECUTEINFOA shellexec;
-    HWND hwndWindow;
-    shellexec.hwnd = hwndWindow;
+    /*SHELLEXECUTEINFOA shellexec;
     shellexec.cbSize = sizeof(SHELLEXECUTEINFOA);
-    shellexec.fMask = 0x00000000;
+    shellexec.fMask = SEE_MASK_NOCLOSEPROCESS;
     shellexec.lpVerb = (const char*)"open";
-    shellexec.lpFile = (char*)"C:\\Users\\MinimaDudus\\Desktop\\Scoreboard.lnk";
+    shellexec.lpFile = (char*)"C:\\Users\\mneal\\OneDrive - Holzer Health System\\Desktop\\Scoreboard.lnk";
     shellexec.nShow = SW_SHOWNORMAL;
 
     if (!ShellExecuteExA(&shellexec)) {
@@ -40,13 +81,21 @@ int main() {
 
     }
 
-    if (!MoveWindow(hwndWindow, 0, 0, 500, 500, TRUE)) {
+    Sleep(500);
+
+    DWORD sePid = GetProcessId(shellexec.hProcess);
+    std::cout << std::endl << sePid;
+    EnumWindows(EnumWindowsProc, 0);
+
+    HWND hwndWindow = FindWindow(NULL, "Holzer Scoreboard");
+
+    if (!MoveWindow(windowH, 0, 0, 500, 500, TRUE)) {
 
         printf("\nMoveWindow failed: %d\n", GetLastError());
 
-    }
+    } 
 
-    CloseHandle(shellexec.hProcess);
+    CloseHandle(shellexec.hProcess); */
 
     DISPLAY_DEVICEA dDevices;
     dDevices.cb = sizeof(DISPLAY_DEVICEA);
@@ -64,3 +113,4 @@ int main() {
     std::cout << std::endl << dName;
 
 }
+
