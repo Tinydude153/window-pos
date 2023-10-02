@@ -5,6 +5,7 @@
 #include <wingdi.h>
 #include <dwmapi.h>
 #include <windef.h>
+#include <vector>
 
 struct ProcHwnd {
     DWORD proc_id;
@@ -17,6 +18,43 @@ bool getWindowRect;
 char tBuffer[64];
 int tSize = 0;
 HWND window = GetTopWindow(GetDesktopWindow());
+
+bool GetWindowRectNoInvisibleBorders(HWND hWnd, RECT* rect) {
+
+    // Get the physical coordinates of the window (this is without the additional offsets)
+    RECT dwmRect;
+    HRESULT hresult = DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &dwmRect, sizeof(RECT));
+    // Return false in such case. error handling was done only here because after this check, the rest of the code
+    // use the API correctly so error is unlikely 
+    if (hresult != S_OK)
+        return false;
+
+    // Get information from the monitor where the window located.
+    // We need it for getting its RECT in logical coordinates (rcMonitor.*)
+    HMONITOR monitor = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFOEX monInfo;
+    monInfo.cbSize = sizeof(MONITORINFOEX);
+    GetMonitorInfo(monitor, &monInfo);
+
+    // Get additional information from this monitor. we need it for getting the physical
+    // coordinates of its position (dmPosition.x and dmPosition.y) and its physical coordinates
+    // of its size (dmPelsWidth)
+    DEVMODE monDeviceConfig;
+    monDeviceConfig.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(monInfo.szDevice, ENUM_CURRENT_SETTINGS, &monDeviceConfig);
+
+    // Calculate the ratio between the logical size and the physical size of the monitor (part of math to handle DPI changes)
+    auto scalingRatio = (monInfo.rcMonitor.right - monInfo.rcMonitor.left) / (double)monDeviceConfig.dmPelsWidth;
+
+    // Calculate the final answer in logical coordinates
+    rect->left = (dwmRect.left - monDeviceConfig.dmPosition.x) * scalingRatio + monInfo.rcMonitor.left;
+    rect->right = (dwmRect.right - monDeviceConfig.dmPosition.x) * scalingRatio + monInfo.rcMonitor.left;
+    rect->top = (dwmRect.top - monDeviceConfig.dmPosition.y) * scalingRatio + monInfo.rcMonitor.top;
+    rect->bottom = (dwmRect.bottom - monDeviceConfig.dmPosition.y) * scalingRatio + monInfo.rcMonitor.top;
+
+    return true; // success
+
+}
 
 BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
     DWORD processId;
@@ -44,24 +82,90 @@ BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
     return TRUE;
 }
 
+typedef struct {
+
+    char windowName[128];
+    unsigned long pid;
+    HWND windowHwnd;
+
+} windowsProcess;
+
+bool createProcess(const char* name, char cmd[], PROCESS_INFORMATION pi, windowsProcess* proc) {
+
+    const int windowNameBufferSize = 128;
+    char windowNameText[windowNameBufferSize];
+
+    // useless required garbage; most programs don't even check this so it doesn't even work
+    STARTUPINFOA si;
+    memset(&si, 0, sizeof(STARTUPINFOA));
+
+    if (!CreateProcessA(name, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+
+        printf("\nCreateProcess failed: %d\n", GetLastError());
+        return false;
+
+    }
+
+    WaitForInputIdle(pi.hProcess, INFINITE);
+    HWND window;
+    ProcHwnd ph { pi.dwProcessId, window };
+    Sleep(5000);
+    EnumWindows(enum_windows_proc, (LPARAM)&ph);
+
+    Sleep(5000);
+
+    HWND pWindow = GetParent(ph.hwnd);
+    if (pWindow != NULL) {
+
+        proc->windowHwnd = pWindow;
+
+    }
+
+    GetWindowTextA(proc->windowHwnd, proc->windowName, windowNameBufferSize);
+
+    proc->pid = pi.dwProcessId;
+    //proc.windowHwnd = ph.hwnd;
+
+    std::cout << std::endl << proc->pid;
+    std::cout << std::endl << proc->windowName;
+
+    return true;
+
+}
+
+struct sMonitors {
+
+    std::vector<int> iMonitors;
+    std::vector<HMONITOR> hMonitor;
+    std::vector<HDC> mHdc;
+    std::vector<RECT> mRect;
+
+};
+
+static BOOL CALLBACK MonitorEnum(HMONITOR hMon, HDC hdc, LPRECT lprcMonitor, LPARAM pData) {
+
+    sMonitors* smonitors = (sMonitors*)pData;
+
+    smonitors->hMonitor.push_back(hMon);
+    smonitors->mHdc.push_back(hdc);
+    smonitors->mRect.push_back(*lprcMonitor);
+    smonitors->iMonitors.push_back(smonitors->mHdc.size());
+
+    return TRUE;
+
+}
+
 int main() {
 
     STARTUPINFOA si;
     memset(&si, 0, sizeof(STARTUPINFOA));
     si.cb = sizeof(STARTUPINFOA);
-    si.dwX = 0;
-    si.dwY = 0;
-    si.lpTitle = (char*)"Window Testing";
-    si.dwXSize = 1000;
-    si.dwYSize = 1000;
-    si.wShowWindow = SW_HIDE;
-    si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USEPOSITION | STARTF_USESIZE;
     PROCESS_INFORMATION pi;
 
     const char* path = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
     char cline[] = "\"-app\"www.twitch.tv\"\"";
 
-    if (!CreateProcessA(path, cline, NULL, 
+    /*if (!CreateProcessA(path, cline, NULL, 
     NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
 
         printf("\nCreateProcess failed: %d\n", GetLastError());
@@ -85,37 +189,31 @@ int main() {
 
     }
 
+    char captionBuffer[512];
+    GetWindowTextA(ph.hwnd, captionBuffer, 128);
+    std::cout << std::endl << captionBuffer; */
+
+    windowsProcess* proc_struct;
+    proc_struct = (windowsProcess*)malloc(sizeof(windowsProcess));
+    memset(proc_struct, 0, sizeof(windowsProcess));
+
+    if (!createProcess(path, cline, pi, proc_struct)) {
+
+        printf("\nCreateProcess failed: %d\n", GetLastError());
+
+    };
+
+    Sleep(500);
+
     SetProcessDPIAware();
-    Sleep(5000);
-    // Windows deals with screen borders to account for resizing, so this is for offsetting that to get
-    // accurate screen sizes
-    RECT rect, frame;
-    GetWindowRect(ph.hwnd, &rect);
-    DwmGetWindowAttribute(ph.hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &frame, sizeof(RECT));
-
-    RECT border;
-    border.left = frame.left - rect.left;
-    border.top = frame.top - rect.top;
-    border.right = frame.right - rect.right;
-    border.bottom = frame.bottom - rect.bottom;
-
-    rect.left -= border.left;
-    rect.top -= border.top;
-    rect.right -= border.right;
-    rect.bottom -= border.bottom;
-
-    std::cout << std::endl << rect.left;
-    std::cout << std::endl << rect.top;
-    std::cout << std::endl << rect.right;
-    std::cout << std::endl << rect.bottom;
 
     HDWP deferWindow = BeginDeferWindowPos(1);
 
     deferWindow = DeferWindowPos(
         deferWindow,
-        ph.hwnd,
+        proc_struct->windowHwnd,
         NULL,
-        0,
+        -7,
         0,
         2000,
         400,
@@ -134,67 +232,24 @@ int main() {
 
     Sleep(5000);
 
-    UpdateWindow(ph.hwnd);
+    UpdateWindow(proc_struct->windowHwnd);
 
-    /*if (!SetWindowPos(ph.hwnd, HWND_BOTTOM, 0, 0, 1000, 500, SWP_HIDEWINDOW)) {
-
-        printf("\nSetWindowPos failed: %d\n", GetLastError());
-
-    }
-
-    Sleep(5000);
-
-    UpdateWindow(ph.hwnd);
-
-    if (!ShowWindow(ph.hwnd, SW_SHOW)) {
-
-        printf("\nShowWindow failed: %d\n", GetLastError());
-
-    }
-
-    UpdateWindow(ph.hwnd);
-    WaitForSingleObject(ph.hwnd, INFINITE);
-
-    /*if (!MoveWindow(ph.hwnd, 0, 0, 800, 200, TRUE)) {
-
-        printf("\nMoveWindow failed: %d\n", GetLastError());
-
-    } */
-
-    PostMessageA(ph.hwnd, WM_CLOSE, 0, 0);  
-    DestroyWindow(ph.hwnd);
+    PostMessageA(proc_struct->windowHwnd, WM_CLOSE, 0, 0);  
+    DestroyWindow(proc_struct->windowHwnd);
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
-    /*SHELLEXECUTEINFOA shellexec;
-    shellexec.cbSize = sizeof(SHELLEXECUTEINFOA);
-    shellexec.fMask = SEE_MASK_NOCLOSEPROCESS;
-    shellexec.lpVerb = (const char*)"open";
-    shellexec.lpFile = (char*)"C:\\Users\\mneal\\OneDrive - Holzer Health System\\Desktop\\Scoreboard.lnk";
-    shellexec.nShow = SW_SHOWNORMAL;
+    sMonitors monitors;
+    EnumDisplayMonitors(NULL, NULL, MonitorEnum, (LPARAM)&monitors);
 
-    if (!ShellExecuteExA(&shellexec)) {
+    for (int i = 0; i < monitors.iMonitors.size(); i++) {
 
-        printf("\nShellExecute failed: %d\n", GetLastError());
+        std::cout << std::endl << "Screen ID: " << i;
+        std::cout << std::endl << "Left top corner: " << monitors.mRect[i].left << ", " << monitors.mRect[i].top;
+        //std::cout << std::endl <<
 
     }
-
-    Sleep(500);
-
-    DWORD sePid = GetProcessId(shellexec.hProcess);
-    std::cout << std::endl << sePid;
-    EnumWindows(EnumWindowsProc, 0);
-
-    HWND hwndWindow = FindWindow(NULL, "Holzer Scoreboard");
-
-    if (!MoveWindow(windowH, 0, 0, 500, 500, TRUE)) {
-
-        printf("\nMoveWindow failed: %d\n", GetLastError());
-
-    } 
-
-    CloseHandle(shellexec.hProcess); */
 
     DISPLAY_DEVICEA dDevices;
     memset(&dDevices, 0, sizeof(DISPLAY_DEVICEA));
