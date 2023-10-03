@@ -3,13 +3,16 @@
 BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
 
     DWORD processId;
+    DWORD threadId;
+    static HWND tWindow = ((Window::EnumProcess*)lParam)->zOrderTopWindow;
 
-    ((Window::EnumProcess*)lParam)->ReturnWindow = GetWindow (
-        ((Window::EnumProcess*)lParam)->zOrderTopWindow, 
+    tWindow = GetWindow (
+        tWindow, 
         GW_HWNDNEXT
     );
 
-    GetWindowThreadProcessId(m_hwnd, &processId);
+    threadId = GetWindowThreadProcessId(m_hwnd, &processId);
+
     if (processId == ((Window::EnumProcess*)lParam)->pid) {
         ((Window::EnumProcess*)lParam)->ReturnWindow = m_hwnd;
         std::cout << std::endl << "EQUAL";
@@ -33,10 +36,11 @@ bool Window::OpenWindow(const char* path, char cmd[], PROCESS_INFORMATION pi, Wi
 
     WaitForInputIdle(pi.hProcess, INFINITE);
     HWND hWindow;
+    ep->tid = pi.dwThreadId;
     ep->pid = pi.dwProcessId;
+    printf("\nep->pid: %d\n", ep->pid);
     w->pid = pi.dwProcessId;
-    Sleep(5000);
-    EnumWindows(enum_windows_proc, (LPARAM)&ep);
+    EnumWindows(enum_windows_proc, (LPARAM)ep);
 
     Sleep(500);
 

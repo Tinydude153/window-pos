@@ -208,14 +208,14 @@ int main() {
     // Instantiate instance of EnumProcess struct and initialize memory for it
     Window::EnumProcess* ep;
     ep = (Window::EnumProcess*)malloc(sizeof(Window::EnumProcess));
-    memset(ep, 0, sizeof(Window::EnumProcess));
+    memset(ep, 0, sizeof(ep));
 
     Window Window(ep);
 
     // Instantiate instance of WindowInfo struct and initialize memory for it
     Window::WindowInfo* w;
     w = (Window::WindowInfo*)malloc(sizeof(Window::WindowInfo));
-    memset(w, 0, sizeof(Window::WindowInfo));
+    memset(w, 0, sizeof(w));
 
     if (!Window.OpenWindow(path, cline, pi, w, ep)) {
 

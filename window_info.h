@@ -24,6 +24,7 @@ class Window {
 
     struct EnumProcess {
 
+        DWORD tid;
         DWORD pid;
         HWND zOrderTopWindow;
         HWND ReturnWindow;
