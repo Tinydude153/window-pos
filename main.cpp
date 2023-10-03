@@ -7,6 +7,8 @@
 #include <windef.h>
 #include <vector>
 
+#include "window_info.h"
+
 struct ProcHwnd {
     DWORD proc_id;
     HWND  hwnd;
@@ -56,7 +58,7 @@ bool GetWindowRectNoInvisibleBorders(HWND hWnd, RECT* rect) {
 
 }
 
-BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
+/*BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
     DWORD processId;
 
     window = GetWindow(window, GW_HWNDNEXT);
@@ -71,7 +73,7 @@ BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
 
         } while (m_hwnd = GetWindow(m_hwnd, GW_HWNDNEXT));
 
-    }*/
+    }
 
     GetWindowThreadProcessId(m_hwnd, &processId);
     if (processId == ((ProcHwnd*)lParam)->proc_id) {
@@ -80,7 +82,7 @@ BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
         return FALSE;
     }
     return TRUE;
-}
+} */
 
 typedef struct {
 
@@ -90,7 +92,7 @@ typedef struct {
 
 } windowsProcess;
 
-bool createProcess(const char* name, char cmd[], PROCESS_INFORMATION pi, windowsProcess* proc) {
+/*bool createProcess(const char* name, char cmd[], PROCESS_INFORMATION pi, windowsProcess* proc) {
 
     const int windowNameBufferSize = 128;
     char windowNameText[windowNameBufferSize];
@@ -131,7 +133,7 @@ bool createProcess(const char* name, char cmd[], PROCESS_INFORMATION pi, windows
 
     return true;
 
-}
+} */
 
 struct sMonitors {
 
@@ -193,7 +195,7 @@ int main() {
     GetWindowTextA(ph.hwnd, captionBuffer, 128);
     std::cout << std::endl << captionBuffer; */
 
-    windowsProcess* proc_struct;
+    /*windowsProcess* proc_struct;
     proc_struct = (windowsProcess*)malloc(sizeof(windowsProcess));
     memset(proc_struct, 0, sizeof(windowsProcess));
 
@@ -201,7 +203,25 @@ int main() {
 
         printf("\nCreateProcess failed: %d\n", GetLastError());
 
-    };
+    };*/
+
+    // Instantiate instance of EnumProcess struct and initialize memory for it
+    Window::EnumProcess* ep;
+    ep = (Window::EnumProcess*)malloc(sizeof(Window::EnumProcess));
+    memset(ep, 0, sizeof(Window::EnumProcess));
+
+    Window Window(ep);
+
+    // Instantiate instance of WindowInfo struct and initialize memory for it
+    Window::WindowInfo* w;
+    w = (Window::WindowInfo*)malloc(sizeof(Window::WindowInfo));
+    memset(w, 0, sizeof(Window::WindowInfo));
+
+    if (!Window.OpenWindow(path, cline, pi, w, ep)) {
+
+        printf("\nCreateProcess failed: %d\n", GetLastError());
+
+    }
 
     Sleep(500);
 
@@ -211,7 +231,7 @@ int main() {
 
     deferWindow = DeferWindowPos(
         deferWindow,
-        proc_struct->windowHwnd,
+        w->window,
         NULL,
         -7,
         0,
@@ -232,10 +252,10 @@ int main() {
 
     Sleep(5000);
 
-    UpdateWindow(proc_struct->windowHwnd);
+    UpdateWindow(w->window);
 
-    PostMessageA(proc_struct->windowHwnd, WM_CLOSE, 0, 0);  
-    DestroyWindow(proc_struct->windowHwnd);
+    PostMessageA(w->window, WM_CLOSE, 0, 0);  
+    DestroyWindow(w->window);
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
