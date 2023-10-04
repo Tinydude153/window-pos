@@ -9,18 +9,6 @@
 
 #include "window_info.h"
 
-struct ProcHwnd {
-    DWORD proc_id;
-    HWND  hwnd;
-};
-
-RECT itRect;
-bool getWindowRect;
-
-char tBuffer[64];
-int tSize = 0;
-HWND window = GetTopWindow(GetDesktopWindow());
-
 bool GetWindowRectNoInvisibleBorders(HWND hWnd, RECT* rect) {
 
     // Get the physical coordinates of the window (this is without the additional offsets)
@@ -58,82 +46,6 @@ bool GetWindowRectNoInvisibleBorders(HWND hWnd, RECT* rect) {
 
 }
 
-/*BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
-    DWORD processId;
-
-    window = GetWindow(window, GW_HWNDNEXT);
-
-    /*if (IsWindowVisible(m_hwnd)) {
-
-        do {
-
-            tSize = GetWindowTextLengthA(m_hwnd);
-            GetWindowTextA(m_hwnd, tBuffer, tSize + 1);
-            std::cout << std::endl << tBuffer;
-
-        } while (m_hwnd = GetWindow(m_hwnd, GW_HWNDNEXT));
-
-    }
-
-    GetWindowThreadProcessId(m_hwnd, &processId);
-    if (processId == ((ProcHwnd*)lParam)->proc_id) {
-        ((ProcHwnd*)lParam)->hwnd = m_hwnd;
-        std::cout << std::endl << "EQUAL";
-        return FALSE;
-    }
-    return TRUE;
-} */
-
-typedef struct {
-
-    char windowName[128];
-    unsigned long pid;
-    HWND windowHwnd;
-
-} windowsProcess;
-
-/*bool createProcess(const char* name, char cmd[], PROCESS_INFORMATION pi, windowsProcess* proc) {
-
-    const int windowNameBufferSize = 128;
-    char windowNameText[windowNameBufferSize];
-
-    // useless required garbage; most programs don't even check this so it doesn't even work
-    STARTUPINFOA si;
-    memset(&si, 0, sizeof(STARTUPINFOA));
-
-    if (!CreateProcessA(name, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-
-        printf("\nCreateProcess failed: %d\n", GetLastError());
-        return false;
-
-    }
-
-    WaitForInputIdle(pi.hProcess, INFINITE);
-    HWND window;
-    ProcHwnd ph { pi.dwProcessId, window };
-    Sleep(5000);
-    EnumWindows(enum_windows_proc, (LPARAM)&ph);
-
-    Sleep(5000);
-
-    HWND pWindow = GetParent(ph.hwnd);
-    if (pWindow != NULL) {
-
-        proc->windowHwnd = pWindow;
-
-    }
-
-    GetWindowTextA(proc->windowHwnd, proc->windowName, windowNameBufferSize);
-
-    proc->pid = pi.dwProcessId;
-    //proc.windowHwnd = ph.hwnd;
-
-    std::cout << std::endl << proc->pid;
-    std::cout << std::endl << proc->windowName;
-
-    return true;
-
-} */
 
 struct sMonitors {
 
@@ -166,44 +78,6 @@ int main() {
 
     const char* path = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
     char cline[] = "\"-app\"www.twitch.tv\"\"";
-
-    /*if (!CreateProcessA(path, cline, NULL, 
-    NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-
-        printf("\nCreateProcess failed: %d\n", GetLastError());
-
-    };
-
-    std::cout << std::endl << pi.dwProcessId;
-
-    WaitForInputIdle(pi.hProcess, INFINITE);
-    HWND windowH;
-    ProcHwnd ph { pi.dwProcessId, windowH };
-    Sleep(5000);
-    EnumWindows(enum_windows_proc, (LPARAM)&ph);
-
-    Sleep(500);
-
-    HWND pWindow = GetParent(ph.hwnd);
-    if (pWindow != NULL) {
-
-        ph.hwnd = pWindow;
-
-    }
-
-    char captionBuffer[512];
-    GetWindowTextA(ph.hwnd, captionBuffer, 128);
-    std::cout << std::endl << captionBuffer; */
-
-    /*windowsProcess* proc_struct;
-    proc_struct = (windowsProcess*)malloc(sizeof(windowsProcess));
-    memset(proc_struct, 0, sizeof(windowsProcess));
-
-    if (!createProcess(path, cline, pi, proc_struct)) {
-
-        printf("\nCreateProcess failed: %d\n", GetLastError());
-
-    };*/
 
     // Instantiate instance of EnumProcess struct and initialize memory for it
     Window::EnumProcess* ep;

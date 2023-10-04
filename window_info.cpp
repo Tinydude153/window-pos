@@ -13,7 +13,7 @@ BOOL CALLBACK enum_windows_proc(HWND m_hwnd, LPARAM lParam) {
 
     threadId = GetWindowThreadProcessId(m_hwnd, &processId);
 
-    if (processId == ((Window::EnumProcess*)lParam)->pid) {
+    if (threadId == ((Window::EnumProcess*)lParam)->tid) {
         ((Window::EnumProcess*)lParam)->ReturnWindow = m_hwnd;
         std::cout << std::endl << "EQUAL";
         return FALSE;
@@ -34,17 +34,21 @@ bool Window::OpenWindow(const char* path, char cmd[], PROCESS_INFORMATION pi, Wi
 
     }
 
-    WaitForInputIdle(pi.hProcess, INFINITE);
-    HWND hWindow;
+    // Fill EnumProcess struct and the pid of WindowInfo struct
     ep->tid = pi.dwThreadId;
     ep->pid = pi.dwProcessId;
-    printf("\nep->pid: %d\n", ep->pid);
     w->pid = pi.dwProcessId;
+    Sleep(500);
+
+    // Find the window that is associated with the created process
     EnumWindows(enum_windows_proc, (LPARAM)ep);
 
     Sleep(500);
 
+    // Set WindowInfo struct's window member to the found window
     w->window = ep->ReturnWindow;
+
+    // Get parent and if it exists, set the parent member of WindowInfo to its window
     HWND pWindow = GetParent(w->window);
     if (pWindow != NULL) {
 
@@ -52,12 +56,31 @@ bool Window::OpenWindow(const char* path, char cmd[], PROCESS_INFORMATION pi, Wi
 
     }
 
+    // Get window caption; appears to not be very useful if borderless
     GetWindowTextA(w->window, w->caption, Window::BUFFER_SIZE::WINDOW_CAPTION);
 
+    // Get name of executable file for the specified process
+    //   TODO: implement GetFileModuleName instead
+    if (!GetProcessImageFileNameA(pi.hProcess, w->image, Window::BUFFER_SIZE::WINDOW_IMAGE)) {
+
+        printf("\nWindow::OpenWindow: GetProcessImageFileNameA failed: %d\n", GetLastError());
+
+    }
+
+    std::cout << std::endl << w->image;
     std::cout << std::endl << w->pid;
     std::cout << std::endl << w->caption;
 
     return true;
+
+}
+
+void Window::WindowList(Window::WindowInfo* w) {
+
+    // OpenWindow may be called successively, therefore it may be necessary to 
+    // automatically populate new WindowInfo structs that will need enumerated
+    w->WindowList = (Window::WindowInfo*)malloc(sizeof(Window::WindowInfo));
+    w = w->WindowList;
 
 }
 

@@ -8,6 +8,7 @@
 #include <wingdi.h>
 #include <dwmapi.h>
 #include <windef.h>
+#include <psapi.h>
 #include <vector>
 
 class Window {
@@ -18,7 +19,7 @@ class Window {
     enum BUFFER_SIZE {
 
         WINDOW_CAPTION = 128,
-        WINDOW_IMAGE = 512
+        WINDOW_IMAGE = 256
 
     };
 
@@ -39,10 +40,13 @@ class Window {
         char caption[BUFFER_SIZE::WINDOW_CAPTION];
         char image[BUFFER_SIZE::WINDOW_IMAGE];
         unsigned long pid;
+        WindowInfo* WindowList;
 
     };
 
     bool OpenWindow(const char* path, char cmd[], PROCESS_INFORMATION pi, WindowInfo* w, Window::EnumProcess* ep);
+
+    void WindowList(WindowInfo* w);
 
     Window(EnumProcess* ep);
 
