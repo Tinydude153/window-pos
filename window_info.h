@@ -40,6 +40,8 @@ class Window {
         char caption[BUFFER_SIZE::WINDOW_CAPTION];
         char image[BUFFER_SIZE::WINDOW_IMAGE];
         unsigned long pid;
+        int width;
+        int height;
         WindowInfo* WindowList;
 
     };
@@ -47,6 +49,8 @@ class Window {
     bool OpenWindow(const char* path, char cmd[], PROCESS_INFORMATION pi, WindowInfo* w, Window::EnumProcess* ep);
 
     void WindowList(WindowInfo* w);
+
+    bool SetWindowPosition(WindowInfo* w, int x, int y);
 
     Window(EnumProcess* ep);
 

@@ -84,6 +84,32 @@ void Window::WindowList(Window::WindowInfo* w) {
 
 }
 
+bool Window::SetWindowPosition(Window::WindowInfo* w, int x, int y) {
+
+    HDWP DeferWindow = BeginDeferWindowPos(1);
+
+    DeferWindow = DeferWindowPos(
+        DeferWindow,
+        w->window,
+        NULL,
+        x,
+        y,
+        500,
+        500,
+        SWP_NOZORDER
+    );
+
+    if (!EndDeferWindowPos(DeferWindow)) {
+
+        printf("\nWindow::SetWindowPosition: EndDeferWindowPos failed: \n", GetLastError());
+        return false;
+
+    }
+
+    return true;
+
+}
+
 Window::Window(Window::EnumProcess* ep) {
 
     Window::TopWindow = GetTopWindow(GetDesktopWindow());

@@ -91,7 +91,7 @@ int main() {
     w = (Window::WindowInfo*)malloc(sizeof(Window::WindowInfo));
     memset(w, 0, sizeof(w));
 
-    if (!Window.OpenWindow(path, cline, pi, w, ep)) {
+    if (!Window.OpenWindow((const char*)"C:\\Intel\\Lite\\lite.exe", NULL, pi, w, ep)) {
 
         printf("\nCreateProcess failed: %d\n", GetLastError());
 
@@ -101,7 +101,18 @@ int main() {
 
     SetProcessDPIAware();
 
-    HDWP deferWindow = BeginDeferWindowPos(1);
+    Window.SetWindowPosition(w, -7, 0);
+    RECT r;
+    GetWindowRect(w->window, &r);
+    std::cout << std::endl << r.right - r.left;
+    std::cout << std::endl << r.bottom - r.top;
+    WINDOWINFO winfo;
+    winfo.cbSize = sizeof(WINDOWINFO);
+    GetWindowInfo(w->window, &winfo);
+    std::cout << std::endl << winfo.cxWindowBorders;
+    std::cout << std::endl << winfo.cyWindowBorders;
+
+    /*HDWP deferWindow = BeginDeferWindowPos(1);
 
     deferWindow = DeferWindowPos(
         deferWindow,
@@ -122,7 +133,7 @@ int main() {
 
         }
 
-    }
+    }*/
 
     Sleep(5000);
 
@@ -141,6 +152,7 @@ int main() {
 
         std::cout << std::endl << "Screen ID: " << i;
         std::cout << std::endl << "Left top corner: " << monitors.mRect[i].left << ", " << monitors.mRect[i].top;
+        std::cout << std::endl << "Bottom right corner: " << monitors.mRect[i].bottom << ", " << monitors.mRect[i].right;
         //std::cout << std::endl <<
 
     }
