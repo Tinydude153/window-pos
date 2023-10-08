@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "window_info.h"
+#include "screen.h"
 
 bool GetWindowRectNoInvisibleBorders(HWND hWnd, RECT* rect) {
 
@@ -56,7 +57,7 @@ struct sMonitors {
 
 };
 
-static BOOL CALLBACK MonitorEnum(HMONITOR hMon, HDC hdc, LPRECT lprcMonitor, LPARAM pData) {
+/*static BOOL CALLBACK MonitorEnum(HMONITOR hMon, HDC hdc, LPRECT lprcMonitor, LPARAM pData) {
 
     sMonitors* smonitors = (sMonitors*)pData;
 
@@ -67,7 +68,7 @@ static BOOL CALLBACK MonitorEnum(HMONITOR hMon, HDC hdc, LPRECT lprcMonitor, LPA
 
     return TRUE;
 
-}
+}*/
 
 int main() {
 
@@ -91,7 +92,7 @@ int main() {
     w = (Window::WindowInfo*)malloc(sizeof(Window::WindowInfo));
     memset(w, 0, sizeof(w));
 
-    if (!Window.OpenWindow((const char*)"C:\\Intel\\Lite\\lite.exe", NULL, pi, w, ep)) {
+    if (!Window.OpenWindow(path, cline, pi, w, ep)) {
 
         printf("\nCreateProcess failed: %d\n", GetLastError());
 
@@ -101,39 +102,63 @@ int main() {
 
     SetProcessDPIAware();
 
-    Window.SetWindowPosition(w, -7, 0);
-    RECT r;
-    GetWindowRect(w->window, &r);
-    std::cout << std::endl << r.right - r.left;
-    std::cout << std::endl << r.bottom - r.top;
     WINDOWINFO winfo;
     winfo.cbSize = sizeof(WINDOWINFO);
     GetWindowInfo(w->window, &winfo);
-    std::cout << std::endl << winfo.cxWindowBorders;
-    std::cout << std::endl << winfo.cyWindowBorders;
 
-    /*HDWP deferWindow = BeginDeferWindowPos(1);
+    RECT cArea;
+    if (!SystemParametersInfoA(SPI_GETWORKAREA, 0, &cArea, 0)) {
 
-    deferWindow = DeferWindowPos(
-        deferWindow,
-        w->window,
-        NULL,
-        -7,
-        0,
-        2000,
-        400,
-        SWP_NOZORDER
+        printf("\nSystemParametersInfoA failed: %d\n", GetLastError());
+
+    }
+
+    Screen Screen;
+    Screen::ScreenInfo sinfo;
+    //sinfo = (Screen::ScreenInfo*)malloc(sizeof(Screen::ScreenInfo));
+    //memset(sinfo, 0, sizeof(sinfo));
+
+    Screen.MainScreenWorkArea(w, &sinfo);
+    Screen.GetScreenRectangles(&sinfo);
+
+    printf(
+
+        "\nwaLeft: %d\nwaRight: %d\nwaBottom: %d\n",
+        sinfo.ScreenRect[1].left,
+        sinfo.ScreenRect[1].right,
+        sinfo.ScreenRect[1].bottom
+
     );
 
-    if (deferWindow != NULL) {
+    printf(
 
-        if (!EndDeferWindowPos(deferWindow)) {
+        "\n--cLeft: %d\n--cTop: %d\n--cRight: %d\n--cBottom: %d\n", 
+        sinfo.ScreenWorkArea.left, 
+        sinfo.ScreenWorkArea.top, 
+        sinfo.ScreenWorkArea.right, 
+        sinfo.ScreenWorkArea.bottom
 
-            printf("\nEndDeferWindowPos failed: %d\n", GetLastError());
+    );
 
-        }
+    printf("\nTOP: %d\n", sinfo.ScreenRect[1].top);
 
-    }*/
+    printf("\ncyWindowBorder: %d\n", winfo.cyWindowBorders);
+
+
+
+    w->x = 0;
+    w->y = 0;
+    w->width = 1280;
+    w->height = 720;
+
+    Screen.ConvertCoordinates(w, &sinfo, 0);
+
+    Window.SetWindowPosition(w);
+    Window.SetWindowSize(w);
+    Window.GetWindowSize(w);
+    int vwid = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int vhei = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+    printf("\nvwid: %d\nvhei: %d\n", vwid, vhei);
 
     Sleep(5000);
 
@@ -145,17 +170,25 @@ int main() {
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
-    sMonitors monitors;
+    /*sMonitors monitors;
     EnumDisplayMonitors(NULL, NULL, MonitorEnum, (LPARAM)&monitors);
 
     for (int i = 0; i < monitors.iMonitors.size(); i++) {
 
-        std::cout << std::endl << "Screen ID: " << i;
-        std::cout << std::endl << "Left top corner: " << monitors.mRect[i].left << ", " << monitors.mRect[i].top;
-        std::cout << std::endl << "Bottom right corner: " << monitors.mRect[i].bottom << ", " << monitors.mRect[i].right;
+        printf("\nScreen ID: %d\n", i);
+        printf(
+
+            "\n--Left: %d\n--Top: %d\n--Right: %d\n--Bottom: %d\n", 
+            monitors.mRect[i].left , 
+            monitors.mRect[i].top, 
+            monitors.mRect[i].left, 
+            monitors.mRect[i].bottom
+
+        );
+
         //std::cout << std::endl <<
 
-    }
+    } */
 
     DISPLAY_DEVICEA dDevices;
     memset(&dDevices, 0, sizeof(DISPLAY_DEVICEA));
