@@ -78,6 +78,10 @@ bool Screen::GetScreenRectangles(Screen::ScreenInfo* sinfo) {
 bool Screen::ConvertCoordinates(Window::WindowInfo* w, Screen::ScreenInfo* sinfo, int index) {
 
     w->x = w->x + sinfo->ScreenRect[index].left;
+    printf("\nsinfo->ScreenRect[%d].left: %d\n", index, sinfo->ScreenRect[index].left);
+    /*if (w->x > 0) {
+        w->x = w->x + sinfo->ScreenRect[index].right;
+    }*/
     if (index > 0) {
         w->y = sinfo->ScreenRect[index].bottom - w->y - sinfo->ScreenRect[index].top;
     }

@@ -156,11 +156,6 @@ int main() {
     Window.SetWindowPosition(w);
     Window.SetWindowSize(w);
     Window.GetWindowSize(w);
-    int vwid = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-    int vhei = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-    printf("\nvwid: %d\nvhei: %d\n", vwid, vhei);
-
-    Sleep(5000);
 
     UpdateWindow(w->window);
 
